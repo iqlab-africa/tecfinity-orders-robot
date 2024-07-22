@@ -6,9 +6,7 @@ dependencies:
   - pip=23.2.1
   - robocorp-truststore=0.8.0     # Truststore for secure connections
   - pip:
-    - rpaframework==28.0.0        # RPA Framework for automation capabilities
-    - robocorp-browser==2.2.1     # Browser automation
+    - rpaframework==28.6.1       # RPA Framework for automation capabilities
+    - robocorp-browser==2.3.3     # Browser automation
     - robocorp-windows            # Windows desktop automation
-    - robocorp-workitems          # Work items support for passing data between tasks
-
-# Note: subprocess is part of the Python standard library and does not need to be explicitly installed.
+    - robocorp-workitems          # Work items support for passing data between task      
