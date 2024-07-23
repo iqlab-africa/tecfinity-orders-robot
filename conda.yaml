@@ -9,4 +9,6 @@ dependencies:
     - rpaframework==28.6.1       # RPA Framework for automation capabilities
     - robocorp-browser==2.3.3     # Browser automation
     - robocorp-windows            # Windows desktop automation
-    - robocorp-workitems          # Work items support for passing data between task      
+    - robocorp-workitems          # Work items support for passing data between task    
+    - pytesseract  # Python bindings for Tesseract OCR
+    - Pillow  # For working with images in Python  
