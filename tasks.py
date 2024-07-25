@@ -1,90 +1,118 @@
-from robocorp.windows import desktop, find_window
+from robocorp.windows import desktop
 from robocorp.tasks import task
 from RPA.JSON import JSON
 from RPA.Excel.Files import Files
 from RPA.Desktop import Desktop
+import pyautogui
+import pyperclip
 import time
 import re
-import pytesseract
-from PIL import ImageGrab
+import logging
+import os
+
 
 # Initialize the libraries
 json_lib = JSON()
 excel_lib = Files()
 desktop_lib = Desktop()
 
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Paths to your files
 CREDENTIALS_JSON_FILE_PATH = "devdata/creds/mainframe_credentials.json"
 MAINFRAME_CLIENT_PATH = r"C:\\Users\\27810\\OneDrive\\Documentos\\Dynamic Connect\\Session\\TECFINITY.dcs"
 ORDERS_INPUT_FILE_PATH = "devdata/input/OWN FLEET TESTING CUSTOMER LIST 2024-07.xlsx"
+SCREENSHOT_DIR = "output/screenshots"
+WORKING_ITEMS_PATH = "output/workingitems.json"
+
+# Ensure directories exist
+os.makedirs(SCREENSHOT_DIR, exist_ok=True)
+os.makedirs("output", exist_ok=True)
+
+def maximize_window():
+    try:
+        # Send Alt + Space to open the window's system menu
+        desktop().send_keys('{Alt} {Space}')
+        time.sleep(1)  # Wait for the system menu to open
+        
+        # Send 'X' to select the maximize option
+        desktop().send_keys('X')
+        time.sleep(1)  # Wait for the window to maximize
+        print("Window maximized successfully.")
+    except Exception as e:
+        print(f"Failed to maximize window: {e}")
 
 def load_credentials():
     """Load credentials from the JSON file."""
     try:
-        print("Loading credentials from JSON file...")
+        logger.info("Loading credentials from JSON file...")
         credentials_list = json_lib.load_json_from_file(CREDENTIALS_JSON_FILE_PATH)
         
         if not credentials_list:
-            print("Credentials list is empty.")
+            logger.info("Credentials list is empty.")
             return None
         
         credentials_payload = credentials_list[0]['payload'] if isinstance(credentials_list, list) else credentials_list['payload']
-        print("Credentials loaded successfully.")
+        logger.info("Credentials loaded successfully.")
         return credentials_payload["username"], credentials_payload["password"]
     except Exception as e:
-        print(f"Failed to load credentials: {e}")
+        logger.error(f"Failed to load credentials: {e}")
         return None
 
 def start_mainframe_client():
     """Start the mainframe client."""
     try:
-        print("Opening mainframe client...")
+        logger.info("Opening mainframe client...")
         desktop().windows_run(MAINFRAME_CLIENT_PATH)
-        print("Waiting for the mainframe client to load...")
-        time.sleep(10)  # Adjust this time based on your application load time
+        logger.info("Waiting for the mainframe client to load...")
+        time.sleep(4) 
+        maximize_window()
+        time.sleep(6)  # Adjust this time based on your application load time
     except Exception as e:
-        print(f"Failed to start mainframe client: {e}")
+        logger.error(f"Failed to start mainframe client: {e}")
 
 def login(username, password):
     """Perform the login with the provided credentials."""
     try:
-        print("Sending login credentials...")
+        logger.info("Sending login credentials...")
         press_enter(1)  # Send the Enter key to start the login process
-        print(f"Entering username: {username}")
+        logger.info(f"Entering username: {username}")
         enter_value(username)
-        print("Entering password.")
+        logger.info("Entering password.")
         enter_value(password)
-        print("Login process completed.")
-        print("Sending login credentials...TO SUBSCREEN")
+        logger.info("Login process completed.")
+        logger.info("Sending login credentials...TO SUBSCREEN")
         press_enter(1)  # Send the Enter key to start the login process
-        print(f"Entering username: {username}")
+        logger.info(f"Entering username: {username}")
         enter_value(username)
-        print("Entering password.")
+        logger.info("Entering password.")
         enter_value(password)
-        print("Login process completed.")
+        logger.info("Login process completed.")
     except Exception as e:
-        print(f"Failed to login: {e}")
+        logger.error(f"Failed to login: {e}")
 
 def rollback_to_main_screen():
     """Rollback to the main screen by sending F1 key 4 times."""
     try:
-        print("Rolling back to the main screen by sending F1 key 4 times...")
+        logger.info("Rolling back to the main screen by sending F1 key 4 times...")
         send_keys_multiple_times('{F1}', 4)
-        print("Rollback to main screen completed.")
+        logger.info("Rollback to main screen completed.")
     except Exception as e:
-        print(f"An error occurred during rollback: {e}")
+        logger.error(f"An error occurred during rollback: {e}")
 
 def rollback_from_sub_screen():
     """Rollback from a sub-screen to the main screen."""
     try:
-        print("Rolling back to the main screen by exiting sub screen times...")
+        logger.info("Rolling back to the main screen by exiting sub screen...")
         desktop().send_keys('{F1}')
         desktop().send_keys('{RIGHT}')
         desktop().send_keys('{Enter}')
         time.sleep(2)  # Adjust the sleep time if necessary
-        print("Rollback to main screen completed.")
+        logger.info("Rollback to main screen completed.")
     except Exception as e:
-        print(f"An error occurred during rollback: {e}")
+        logger.error(f"An error occurred during rollback: {e}")
 
 def press_enter(times=1):
     """Press the Enter key a specified number of times."""
@@ -93,17 +121,7 @@ def press_enter(times=1):
             desktop().send_keys('{Enter}')
             time.sleep(3)  # Adjust the sleep time if necessary
     except Exception as e:
-        print(f"Failed to press Enter: {e}")
-
-def press_tab(times=1):
-    """Press the Tab key a specified number of times."""
-    try:
-        for _ in range(times):
-            desktop().send_keys('{Tab}')
-            time.sleep(3)  # Adjust the sleep time if necessary
-    except Exception as e:
-        print(f"Failed to press Tab: {e}")
-
+        logger.error(f"Failed to press Enter: {e}")
 
 def enter_value(param, enter_after=True):
     """Enter a value and optionally press Enter."""
@@ -111,32 +129,32 @@ def enter_value(param, enter_after=True):
         desktop().send_keys(f"{param}")
         time.sleep(3)  # Adjust the sleep time if necessary
         if enter_after:
-            press_enter(2)
+            press_enter(1)
     except Exception as e:
-        print(f"Failed to enter value: {e}")
+        logger.error(f"Failed to enter value: {e}")
 
 def close_mainframe_client():
     """Close the mainframe client."""
     try:
-        print("Attempting to close the mainframe client...")
+        logger.info("Attempting to close the mainframe client...")
         desktop().send_keys('{Alt}{F4}')
         desktop().send_keys('{Tab}')
         press_enter(1)
-        print("Sent Alt + F4 to the mainframe window.")
+        logger.info("Sent Alt + F4 to the mainframe window.")
     except Exception as e:
-        print(f"An error occurred while trying to close the mainframe client: {e}")
+        logger.error(f"An error occurred while trying to close the mainframe client: {e}")
 
 def load_customer_data():
     """Load customer data from the Excel file."""
     try:
-        print("Loading customer data from Excel file...")
+        logger.info("Loading customer data from Excel file...")
         excel_lib.open_workbook(ORDERS_INPUT_FILE_PATH)
         rows = excel_lib.read_worksheet_as_table(header=True)
         excel_lib.close_workbook()
-        print("Customer data loaded successfully.")
+        logger.info("Customer data loaded successfully.")
         return rows
     except Exception as e:
-        print(f"Failed to load customer data: {e}")
+        logger.error(f"Failed to load customer data: {e}")
         return []
 
 def send_keys_multiple_times(key, times):
@@ -146,7 +164,7 @@ def send_keys_multiple_times(key, times):
             desktop().send_keys(key)
             time.sleep(3)  # Adjust the sleep time if necessary
     except Exception as e:
-        print(f"Failed to send keys multiple times: {e}")
+        logger.error(f"Failed to send keys multiple times: {e}")
 
 def press_arrow_down(times=1):
     """Press the arrow down key a specified number of times."""
@@ -155,7 +173,7 @@ def press_arrow_down(times=1):
             desktop().send_keys('{DOWN}')
             time.sleep(2)  # Adjust the sleep time if necessary
     except Exception as e:
-        print(f"Failed to press arrow down: {e}")
+        logger.error(f"Failed to press arrow down: {e}")
 
 def press_arrow_right(times=1):
     """Press the arrow right key a specified number of times."""
@@ -164,20 +182,17 @@ def press_arrow_right(times=1):
             desktop().send_keys('{RIGHT}')
             time.sleep(2)  # Adjust the sleep time if necessary
     except Exception as e:
-        print(f"Failed to press arrow right: {e}")
+        logger.error(f"Failed to press arrow right: {e}")
 
 def release_onhold_order(pnumber):
     """Release on hold order using parcel number."""
     try:
-        print(f"Processing customer p_number: {pnumber}")
+        logger.info(f"Processing customer p_number: {pnumber}")
         desktop().send_keys("+{Enter}")  # Send Shift + Enter
         enter_value(2)
         enter_value(pnumber)
-        press_enter(1)
         enter_value("N")
-        press_enter(1)
         enter_value("RL")
-        press_enter(1)
         press_arrow_down(1)
         press_enter(1)
         enter_value(1)
@@ -186,7 +201,7 @@ def release_onhold_order(pnumber):
         press_enter(2)
         time.sleep(5)
     except Exception as e:
-        print(f"An error occurred while processing customer p_number {pnumber}: {e}")
+        logger.error(f"An error occurred while processing customer p_number {pnumber}: {e}")
         rollback_to_main_screen()
         close_mainframe_client()
         raise
@@ -194,188 +209,109 @@ def release_onhold_order(pnumber):
 def allocate_picking_slip(pnumber, allocated_user):
     """Allocate picking slip using parcel number and allocated user."""
     try:
-        print(f"Processing customer p_number: {pnumber}")
+        logger.info(f"Processing customer p_number: {pnumber}")
         desktop().send_keys("+{Enter}")  # Send Shift + Enter
         enter_value(3)
         enter_value(allocated_user)
-        press_enter(1)
         enter_value(pnumber)
-        press_enter(1)
         time.sleep(4)
     except Exception as e:
-        print(f"An error occurred while processing customer p_number {pnumber}: {e}")
+        logger.error(f"An error occurred while processing customer p_number {pnumber}: {e}")
         rollback_to_main_screen()
         close_mainframe_client()
         raise
 
 def precheck_picking_slip(pnumber, stock_no, quantity_value):
-    """Precheck picking slip using parcel number, stock number, and quantity value."""
+    """4. Precheck picking slip using parcel number, stock number, and quantity value."""
     try:
-        print(f"Processing customer p_number: {pnumber}")
+        logger.info(f"Processing customer p_number: {pnumber}")
         desktop().send_keys("+{Enter}")  # Send Shift + Enter
         enter_value(4)
         enter_value(pnumber)
         press_enter(1)
-        press_arrow_down(1)
-        press_enter(1)
         enter_value(stock_no)
         enter_value(quantity_value)
         press_enter(1)
-        enter_value("Y")
-        press_enter(1)
         time.sleep(4)
     except Exception as e:
-        print(f"An error occurred while processing customer p_number {pnumber}: {e}")
+        logger.error(f"An error occurred while processing customer p_number {pnumber}: {e}")
         rollback_to_main_screen()
         close_mainframe_client()
         raise
 
 def scan_picking_slip(pnumber, stock_no, quantity_value):
-    """Scan picking slip using parcel number, stock number, and quantity value."""
+    """5. Scan picking slip using parcel number, stock number, and quantity value."""
     try:
-        print(f"Processing customer p_number: {pnumber}")
+        logger.info(f"Processing customer p_number: {pnumber}")
         desktop().send_keys("+{Enter}")  # Send Shift + Enter
         enter_value(5)
         enter_value(pnumber)
         press_enter(1)
         enter_value(stock_no)
         enter_value(quantity_value)
-        enter_value("N")
         press_enter(2)
-        time.sleep(5)
-    except Exception as e:
-        print(f"An error occurred while processing customer p_number {pnumber}: {e}")
-        rollback_to_main_screen()
-        close_mainframe_client()
-        raise
-
-def print_delivery_slip(pnumber, no_of_labels, total_weight, packer, checker):
-    """Print delivery slip using parcel number, number of labels, total weight, packer, and checker."""
-    try:
-        print(f"Processing customer p_number: {pnumber}")
-        desktop().send_keys("+{Enter}")  # Send Shift + Enter
-        enter_value(6)
-        enter_value(pnumber)
-        press_enter(1)
-        enter_value(total_weight)
-        enter_value(no_of_labels)
-        enter_value(checker)
-
-        enter_value(packer)
-        enter_value(1)
-        press_enter(1)
         time.sleep(4)
     except Exception as e:
-        print(f"An error occurred while processing customer p_number {pnumber}: {e}")
+        logger.error(f"An error occurred while processing customer p_number {pnumber}: {e}")
         rollback_to_main_screen()
         close_mainframe_client()
         raise
 
-def capture_screenshot():
-    """Capture a screenshot of the entire screen."""
+def save_working_item(pnumber, **params):
+    """Save working item details to JSON file."""
     try:
-        print("Capturing screenshot of the entire screen...")
-        screenshot = ImageGrab.grab()
-        screenshot_path = "screenshot.png"
-        screenshot.save(screenshot_path)
-        print(f"Screenshot saved at {screenshot_path}")
-        return screenshot_path
+        working_items = json_lib.load_json_from_file(WORKING_ITEMS_PATH)
+        if not working_items:
+            working_items = []
+        working_item = {"pnumber": pnumber}
+        working_item.update(params)
+        working_items.append(working_item)
+        json_lib.save_json_to_file(WORKING_ITEMS_PATH, working_items)
+        logger.info(f"Working item for p_number {pnumber} saved successfully.")
     except Exception as e:
-        print(f"Failed to capture screenshot: {e}")
-        return None
-    
-def extract_pnumber_from_text(text):
-    """Extract parcel number from text using regex."""
-    try:
-        print("Extracting parcel number from text...")
-        pnumber_match = re.search(r'\bP\d+[a-zA-Z0-9]*\b', text)  # Adjust regex to match your pattern
-        pnumber = pnumber_match.group(0) if pnumber_match else None
-        return pnumber
-    except Exception as e:
-        print(f"Failed to extract parcel number from text: {e}")
-        return None
-
-def extract_text_with_ocr(image_path):
-    """Extract text from an image using OCR."""
-    try:
-        print(f"Extracting text from image: {image_path}")
-        image = ImageGrab.open(image_path)
-        text = pytesseract.image_to_string(image)
-        print(f"Extracted text: {text}")
-        return text
-    except Exception as e:
-        print(f"Failed to extract text with OCR: {e}")
-        return None
-    
-def process_customers(customer_data):
-    """Process each customer and enter order details."""
-    for row in customer_data:
-        try:
-            customer_number = row['Account No']
-            stock_no = row['Stock No']
-            quantity_value = row['Quantity']
-            allocated_user = row['Allocated User']
-            no_of_labels = row['No of Labels']
-            total_weight = row['Total Weight']
-            orderdesc = row['Order Description']
-            comment =row['Comment']
-            packer = row['Packer']
-            checker = row['Checker']
-
-            print(f"Processing customer number: {customer_number}")
-            desktop().send_keys("+{Enter}")  # Send Shift + Enter
-            time.sleep(3)
-            press_enter(1)
-            time.sleep(3)
-            enter_value(customer_number)
-            time.sleep(4) 
-            press_enter(1)
-            # Adjust the sleep time if necessary
-            send_keys_multiple_times("{Esc}", 1)
-            press_enter(2)
-            enter_value(orderdesc)
-            time.sleep(5)
-            press_enter(4)
-            # Enter order info
-            enter_value(stock_no)
-            press_enter(3)
-            # Enter quantity value
-            enter_value(quantity_value)
-            press_enter(1)
-            # End enter order info
-            enter_value("C1")
-            enter_value(comment)
-            press_enter(3)
-            # Process the rest using the extracted pnumber
-            pnumber = extract_pnumber_from_text(capture_screenshot())
-            if pnumber:
-                press_enter(1)
-                release_onhold_order(pnumber)
-                allocate_picking_slip(pnumber, allocated_user)
-                precheck_picking_slip(pnumber, stock_no, quantity_value)
-                scan_picking_slip(pnumber, stock_no, quantity_value)
-                print_delivery_slip(pnumber, no_of_labels, total_weight, packer, checker)
-            close_mainframe_client()
-        except Exception as e:
-            print(f"An error occurred while processing customer number {customer_number}: {e}")
-            rollback_to_main_screen()
-            close_mainframe_client()
-            raise
+        logger.error(f"Failed to save working item for p_number {pnumber}: {e}")
 
 @task
 def main():
-    """Main function to run the automation task."""
-    credentials = load_credentials()
-    if credentials:
+    try:
+        # Load credentials and customer data
+        credentials = load_credentials()
+        if not credentials:
+            raise ValueError("No credentials loaded.")
         username, password = credentials
+        customer_data = load_customer_data()
+        if not customer_data:
+            raise ValueError("No customer data loaded.")
+
+        # Start the mainframe client and login
         start_mainframe_client()
         login(username, password)
-        customer_data = load_customer_data()
-        if customer_data:
-            process_customers(customer_data)
-        close_mainframe_client()
-    else:
-        print("No credentials available. Terminating the process.")
 
-if __name__ == "__main__":
-    main()
+        # Process each customer record
+        for customer in customer_data:
+            pnumber = customer["pnumber"]
+            allocated_user = customer.get("allocated_user", "")
+            stock_no = customer.get("stock_no", "")
+            quantity_value = customer.get("quantity_value", "")
+
+            try:
+                release_onhold_order(pnumber)
+                save_working_item(pnumber, step="release_onhold_order")
+                allocate_picking_slip(pnumber, allocated_user)
+                save_working_item(pnumber, step="allocate_picking_slip")
+                precheck_picking_slip(pnumber, stock_no, quantity_value)
+                save_working_item(pnumber, step="precheck_picking_slip")
+                scan_picking_slip(pnumber, stock_no, quantity_value)
+                save_working_item(pnumber, step="scan_picking_slip")
+            except Exception as e:
+                logger.error(f"Failed to process customer p_number {pnumber}: {e}")
+                rollback_to_main_screen()
+                close_mainframe_client()
+                break
+
+        # Close the mainframe client
+        close_mainframe_client()
+    except Exception as e:
+        logger.error(f"An error occurred during the process: {e}")
+        rollback_to_main_screen()
+        close_mainframe_client()
