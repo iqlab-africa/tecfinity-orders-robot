@@ -25,11 +25,9 @@ CREDENTIALS_JSON_FILE_PATH = "devdata/creds/mainframe_credentials.json"
 MAINFRAME_CLIENT_PATH = r"C:\\Users\\27810\\OneDrive\\Documentos\\Dynamic Connect\\Session\\TECFINITY.dcs"
 ORDERS_INPUT_FILE_PATH = "devdata/input/OWN FLEET TESTING CUSTOMER LIST 2024-07.xlsx"
 SCREENSHOT_DIR = "output/screenshots"
-WORKING_ITEMS_PATH = "output/workingitems.json"
 
 # Ensure directories exist
 os.makedirs(SCREENSHOT_DIR, exist_ok=True)
-os.makedirs("output", exist_ok=True)
 
 def maximize_window():
     try:
@@ -246,10 +244,32 @@ def scan_picking_slip(pnumber, stock_no, quantity_value):
         desktop().send_keys("+{Enter}")  # Send Shift + Enter
         enter_value(5)
         enter_value(pnumber)
-        press_enter(1)
         enter_value(stock_no)
         enter_value(quantity_value)
         press_enter(2)
+        time.sleep(5)
+    except Exception as e:
+        logger.error(f"An error occurred while processing customer p_number {pnumber}: {e}")
+        rollback_to_main_screen()
+        close_mainframe_client()
+        raise
+
+def print_delivery_slip(pnumber, no_of_labels, total_weight, packer, checker):
+    """Print delivery slip using parcel number, number of labels, total weight, packer, and checker."""
+    try:
+        logger.info(f"Processing customer p_number: {pnumber}")
+        desktop().send_keys("+{Enter}")  # Send Shift + Enter
+        enter_value(6)
+        
+        enter_value(pnumber)
+        press_enter(1)
+        enter_value(no_of_labels)
+        enter_value(total_weight)
+        enter_value(checker)
+        enter_value(packer)
+        enter_value(checker)
+        press_enter(1)
+        enter_value("Y")
         time.sleep(4)
     except Exception as e:
         logger.error(f"An error occurred while processing customer p_number {pnumber}: {e}")
@@ -257,61 +277,170 @@ def scan_picking_slip(pnumber, stock_no, quantity_value):
         close_mainframe_client()
         raise
 
-def save_working_item(pnumber, **params):
-    """Save working item details to JSON file."""
+def clear_clipboard():
+    """Clear the clipboard."""
     try:
-        working_items = json_lib.load_json_from_file(WORKING_ITEMS_PATH)
-        if not working_items:
-            working_items = []
-        working_item = {"pnumber": pnumber}
-        working_item.update(params)
-        working_items.append(working_item)
-        json_lib.save_json_to_file(WORKING_ITEMS_PATH, working_items)
-        logger.info(f"Working item for p_number {pnumber} saved successfully.")
+        logger.info("Clearing the clipboard.")
+        pyperclip.copy('')
     except Exception as e:
-        logger.error(f"Failed to save working item for p_number {pnumber}: {e}")
+        logger.error(f"An error occurred while clearing the clipboard: {e}")
+
+def highlight_and_copy(start_x, start_y, end_x, end_y):
+    """Highlight text on the screen and copy it to the clipboard."""
+    try:
+        # Clear the clipboard
+        clear_clipboard()
+
+        logger.info(f"Moving to start position ({start_x}, {start_y}).")
+        pyautogui.moveTo(start_x, start_y)
+        
+        logger.info("Clicking and holding to start selection.")
+        pyautogui.mouseDown(button='left')
+        
+        logger.info(f"Moving to end position ({end_x}, {end_y}) to select text.")
+        pyautogui.moveTo(end_x, end_y, duration=0.5)
+        
+        logger.info("Releasing mouse button to end selection.")
+        pyautogui.mouseUp(button='left')
+        
+        logger.info("Copying selection to clipboard.")
+        pyautogui.hotkey('ctrl', 'c')
+        
+        logger.info("Waiting for the clipboard to update.")
+        time.sleep(0.5)
+        logger.info("Retrieving text from clipboard.")
+        text = pyperclip.paste()
+
+        logger.info("Clipboard content saved to clipboard_content.txt")
+
+        clipboard_text = desktop_lib.get_clipboard_value()
+        logger.info(f"Captured text from clipboard: {clipboard_text}")
+
+        return clipboard_text
+    except Exception as e:
+        logger.error(f"An error occurred while capturing screen text: {e}")
+        return None
+    
+
+def save_ocr_output(customer_number, clipboard_text):
+    """Save OCR text output."""
+    try:
+        screentext_path = os.path.join(SCREENSHOT_DIR, f"Cust_{customer_number}_output_text.txt")
+        
+        logger.info(f"Saving clipboard text to {screentext_path}.")
+        with open(screentext_path, 'w', encoding='utf-8') as f:
+            f.write(clipboard_text)
+        
+        logger.info(f"OCR output saved for customer number {customer_number} at {screentext_path}")
+    
+    except Exception as e:
+        logger.error(f"An error occurred while saving OCR output for customer number {customer_number}: {e}")
+
+def extract_pnumber_from_text(screen_text):
+    """Get output text and use regex to extract pnumber."""
+    try:
+        # Regex find the P number by the pretext
+        match = re.search(r"CONF. NO \w+", screen_text)
+        if match:
+            extracted_p_number = match.group()
+            # Clean the matched text
+            extracted_p_number = extracted_p_number.replace("CONF. NO ", "")
+            logger.info(f"Extracted parcel number: {extracted_p_number}")
+            return extracted_p_number
+        else:
+            logger.warning("Parcel number not found in the text.")
+            return None
+    
+    except Exception as e:
+        logger.error(f"An error occurred while extracting parcel number: {e}")
+        return None
+    
+def capture_new_order(customer_number, orderdesc, stock_no, quantity_value, comment):
+    """Capture a new order in the system."""
+    try:
+        logger.info(f"Processing customer number: {customer_number}")
+
+        desktop().send_keys("+{Enter}")
+        logger.info("Sent Shift + Enter.")
+        time.sleep(3)
+        press_enter(2)
+        time.sleep(3)
+        enter_value(customer_number)
+        time.sleep(4)
+        press_enter(1)
+        send_keys_multiple_times("{Esc}", 1)
+        press_enter(2)
+        enter_value(orderdesc)
+        time.sleep(5)
+        press_enter(4)
+        enter_value(stock_no)
+        press_enter(3)
+        enter_value(quantity_value)
+        press_enter(1)
+        enter_value("C1")
+        enter_value(comment)
+        press_enter(4)
+        logger.info("New order captured successfully.")
+    
+    except Exception as e:
+        logger.error(f"An error occurred while capturing new order for customer number {customer_number}: {e}")
+
+            
+    
+def process_customers(customer_data):
+    """Process each customer and enter order details."""
+    for row in customer_data:
+        try:
+            customer_number = row['Account No']
+            stock_no = row['Stock No']
+            quantity_value = row['Quantity']
+            allocated_user = row['Allocated User']
+            no_of_labels = row['No of Labels']
+            total_weight = row['Total Weight']
+            orderdesc = row['Order Description']
+            comment = row['Comment']
+            packer = row['Packer']
+            checker = row['Checker']
+              
+            capture_new_order(customer_number, orderdesc, stock_no, quantity_value, comment)
+            # Your mouse positions
+            start_pos = (390, 218)
+            end_pos = (1168, 542)
+            # Perform the highlight and copy
+            clipboard_text =  highlight_and_copy(start_pos[0], start_pos[1], end_pos[0], end_pos[1])
+            save_ocr_output(customer_number,clipboard_text)
+            pnumber = extract_pnumber_from_text(clipboard_text)
+            if pnumber:
+                    press_enter(3)
+                    enter_value("RL")
+                    release_onhold_order(pnumber)
+                    allocate_picking_slip(pnumber, allocated_user)
+                    precheck_picking_slip(pnumber, stock_no, quantity_value)
+                    scan_picking_slip(pnumber, stock_no, quantity_value)
+                    print_delivery_slip(pnumber, no_of_labels, total_weight, packer, checker)
+            else:
+                    logger.error("Failed to extract pnumber from ocr output")
+      
+            time.sleep(4)
+        except Exception as e:
+            logger.error(f"An error occurred while processing customer number {customer_number}: {e}")
+            time.sleep(4)
+            raise
 
 @task
 def main():
-    try:
-        # Load credentials and customer data
-        credentials = load_credentials()
-        if not credentials:
-            raise ValueError("No credentials loaded.")
+    """Main function to run the automation task."""
+    credentials = load_credentials()
+    if credentials:
         username, password = credentials
-        customer_data = load_customer_data()
-        if not customer_data:
-            raise ValueError("No customer data loaded.")
-
-        # Start the mainframe client and login
         start_mainframe_client()
         login(username, password)
-
-        # Process each customer record
-        for customer in customer_data:
-            pnumber = customer["pnumber"]
-            allocated_user = customer.get("allocated_user", "")
-            stock_no = customer.get("stock_no", "")
-            quantity_value = customer.get("quantity_value", "")
-
-            try:
-                release_onhold_order(pnumber)
-                save_working_item(pnumber, step="release_onhold_order")
-                allocate_picking_slip(pnumber, allocated_user)
-                save_working_item(pnumber, step="allocate_picking_slip")
-                precheck_picking_slip(pnumber, stock_no, quantity_value)
-                save_working_item(pnumber, step="precheck_picking_slip")
-                scan_picking_slip(pnumber, stock_no, quantity_value)
-                save_working_item(pnumber, step="scan_picking_slip")
-            except Exception as e:
-                logger.error(f"Failed to process customer p_number {pnumber}: {e}")
-                rollback_to_main_screen()
-                close_mainframe_client()
-                break
-
-        # Close the mainframe client
+        customer_data = load_customer_data()
+        if customer_data:
+            process_customers(customer_data)
         close_mainframe_client()
-    except Exception as e:
-        logger.error(f"An error occurred during the process: {e}")
-        rollback_to_main_screen()
-        close_mainframe_client()
+    else:
+        print("No credentials available. Terminating the process.")
+
+if __name__ == "__main__":
+    main()
