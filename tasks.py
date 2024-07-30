@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 # Paths to your files
 CREDENTIALS_JSON_FILE_PATH = "devdata/creds/mainframe_credentials.json"
 MAINFRAME_CLIENT_PATH = r"C:\\Users\\27810\\OneDrive\\Documentos\\Dynamic Connect\\Session\\TECFINITY.dcs"
-ORDERS_INPUT_FILE_PATH = "devdata/input/OWN FLEET TESTING CUSTOMER LIST 2024-07.xlsx"
+ORDERS_INPUT_FILE_PATH = "devdata/input/testdata.xlsx"
 SCREENSHOT_DIR = "output/screenshots"
 
 # Ensure directories exist
@@ -190,11 +190,10 @@ def release_onhold_order(pnumber):
         enter_value(2)
         enter_value(pnumber)
         enter_value("N")
+        press_enter(1)
         enter_value("RL")
         press_arrow_down(1)
-        press_enter(1)
-        enter_value(1)
-        press_enter(1)
+        press_enter(3)
         press_arrow_right(1)   
         press_enter(2)
         time.sleep(5)
@@ -244,6 +243,7 @@ def scan_picking_slip(pnumber, stock_no, quantity_value):
         desktop().send_keys("+{Enter}")  # Send Shift + Enter
         enter_value(5)
         enter_value(pnumber)
+        press_enter(1)
         enter_value(stock_no)
         enter_value(quantity_value)
         press_enter(2)
@@ -259,8 +259,7 @@ def print_delivery_slip(pnumber, no_of_labels, total_weight, packer, checker):
     try:
         logger.info(f"Processing customer p_number: {pnumber}")
         desktop().send_keys("+{Enter}")  # Send Shift + Enter
-        enter_value(6)
-        
+        enter_value(6) 
         enter_value(pnumber)
         press_enter(1)
         enter_value(no_of_labels)
