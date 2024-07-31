@@ -1,6 +1,24 @@
 tasks:
-  Run Task:
-    shell: python -m robocorp.tasks run tasks.py
+  LoginTask:
+    robotTask: login_task.py
+
+  CaptureOrderTask:
+    robotTask: capture_order_task.py
+
+  ReleaseOrderTask:
+    robotTask: release_order_task.py
+
+  AllocatePickingSlipTask:
+    robotTask: allocate_picking_slip_task.py
+
+  PrecheckPickingSlipTask:
+    robotTask: precheck_picking_slip_task.py
+
+  ScanPickingSlipTask:
+    robotTask: scan_picking_slip_task.py
+
+  PrintDeliverySlipTask:
+    robotTask: print_delivery_slip_task.py
 
 environmentConfigs:
   - environment_windows_amd64_freeze.yaml
