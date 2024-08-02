@@ -20,6 +20,20 @@ CREDENTIALS_JSON_FILE_PATH = "devdata/creds/mainframe_credentials.json"
 MAINFRAME_CLIENT_PATH = r"C:\\Users\\27810\\OneDrive\\Documentos\\Dynamic Connect\\Session\\TECFINITY.dcs"
 SCREENSHOT_DIR = "output/screenshots"
 
+
+def maximize_window():
+    try:
+        # Send Alt + Space to open the window's system menu
+        desktop().send_keys('{Alt} {Space}')
+        time.sleep(1)  # Wait for the system menu to open
+        
+        # Send 'X' to select the maximize option
+        desktop().send_keys('X')
+        time.sleep(1)  # Wait for the window to maximize
+        print("Window maximized successfully.")
+    except Exception as e:
+        print(f"Failed to maximize window: {e}")
+        
 # Ensure directories exist
 os.makedirs(SCREENSHOT_DIR, exist_ok=True)
 

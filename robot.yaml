@@ -1,24 +1,27 @@
 tasks:
   LoginTask:
-    robotTask: login_task.py
+    shell: python -m robocorp.tasks run login_task.py -t main
 
   CaptureOrderTask:
-    robotTask: capture_order_task.py
+    shell: python -m robocorp.tasks run capture_order_task.py -t main
 
   ReleaseOrderTask:
-    robotTask: release_order_task.py
+    shell: python -m robocorp.tasks run release_order_task.py -t main
 
   AllocatePickingSlipTask:
-    robotTask: allocate_picking_slip_task.py
+    shell: python -m robocorp.tasks run allocate_picking_slip_task.py -t main
 
   PrecheckPickingSlipTask:
-    robotTask: precheck_picking_slip_task.py
+    shell: python -m robocorp.tasks run precheck_picking_slip_task.py -t main
 
   ScanPickingSlipTask:
-    robotTask: scan_picking_slip_task.py
+    shell: python -m robocorp.tasks run scan_picking_slip_task.py -t main
 
   PrintDeliverySlipTask:
-    robotTask: print_delivery_slip_task.py
+    shell: python -m robocorp.tasks run print_delivery_slip_task.py -t main
+
+  SalesOrderTask:
+      shell: python -m robocorp.tasks run tasks.py -t main
 
 environmentConfigs:
   - environment_windows_amd64_freeze.yaml
