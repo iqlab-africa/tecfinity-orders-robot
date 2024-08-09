@@ -96,7 +96,7 @@ def rollback_to_main_screen():
     """Rollback to the main screen by sending F1 key 4 times."""
     try:
         logger.info("Rolling back to the main screen by sending F1 key 4 times...")
-        send_keys_multiple_times('{F1}', 4)
+        go_back('{F1}', 4)
         logger.info("Rollback to main screen completed.")
     except Exception as e:
         logger.error(f"An error occurred during rollback: {e}")
@@ -118,7 +118,7 @@ def press_enter(times=1):
     try:
         for _ in range(times):
             desktop().send_keys('{Enter}')
-            time.sleep(3)  # Adjust the sleep time if necessary
+            time.sleep(2)
     except Exception as e:
         logger.error(f"Failed to press Enter: {e}")
 
@@ -126,7 +126,7 @@ def enter_value(param, enter_after=True):
     """Enter a value and optionally press Enter."""
     try:
         desktop().send_keys(f"{param}")
-        time.sleep(3)  # Adjust the sleep time if necessary
+        time.sleep(1)  # Adjust the sleep time if necessary
         if enter_after:
             press_enter(1)
     except Exception as e:
@@ -156,12 +156,12 @@ def load_customer_data():
         logger.error(f"Failed to load customer data: {e}")
         return []
 
-def send_keys_multiple_times(key, times):
+def go_back(key, times):
     """Send a specified key multiple times."""
     try:
         for _ in range(times):
             desktop().send_keys(key)
-            time.sleep(3)  # Adjust the sleep time if necessary
+            #time.sleep()  # Adjust the sleep time if necessary
     except Exception as e:
         logger.error(f"Failed to send keys multiple times: {e}")
 
@@ -187,11 +187,12 @@ def allocate_picking_slip(pnumber, allocated_user):
     """Allocate picking slip using parcel number and allocated user."""
     try:
         logger.info(f"Processing customer p_number: {pnumber}")
-        desktop().send_keys("+{Enter}")  # Send Shift + Enter
+        desktop().send_keys("+{Enter}") 
         enter_value(3)
         enter_value(allocated_user)
         enter_value(pnumber)
-        time.sleep(4)
+        press_enter(2)
+        go_back("{Esc}", 1)
     except Exception as e:
         logger.error(f"An error occurred while processing customer p_number {pnumber}: {e}")
         rollback_to_main_screen()
@@ -199,8 +200,7 @@ def allocate_picking_slip(pnumber, allocated_user):
         raise
 
     
-def process_customers():
-         # Load working items from JSON
+def allocate_to_picker():
     try:
         working_items_path = "output/workitems.json"
         working_items = json_lib.load_json_from_file(working_items_path)
@@ -217,20 +217,20 @@ def process_customers():
             raise
 
 
-@task
-def main():
-    """Main function to run the automation task."""
-    credentials = load_credentials()
-    if credentials:
-        username, password = credentials
-        start_mainframe_client()
-        login(username, password)
-        customer_data = load_customer_data()
-        if customer_data:
-            process_customers(customer_data)
-        close_mainframe_client()
-    else:
-        print("No credentials available. Terminating the process.")
+#@task
+#def main():
+ #   """Main function to run the automation task."""
+ #   credentials = load_credentials()
+ #   if credentials:
+ #      username, password = credentials
+ #       start_mainframe_client()
+ #       login(username, password)
+ #       customer_data = load_customer_data()
+ ##       if customer_data:
+ #           allocate_to_picker(customer_data)
+ #       close_mainframe_client()
+ #   else:
+ #       print("No credentials available. Terminating the process.")
 
-if __name__ == "__main__":
-    main()
+#if __name__ == "__main__":
+#    main()

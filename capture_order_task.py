@@ -10,19 +10,23 @@ import re
 import logging
 import os
 
+import allocate_picking_slip_task as option3
+import precheck_picking_slip_task as option4
+import scan_picking_slip_task as option5
+import print_delivery_slip_task as option6
 
-# Initialize the libraries
 json_lib = JSON()
 excel_lib = Files()
 desktop_lib = Desktop()
 
-# Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Paths to your files
+# TODO: These should be set via .env or at runtime
+# TODO: Please also fix the workitems json. This file should be populated in full V- the test cases before the program moves
+# to the next screen option
 CREDENTIALS_JSON_FILE_PATH = "devdata/creds/mainframe_credentials.json"
-MAINFRAME_CLIENT_PATH = r"C:\\Users\\27810\\OneDrive\\Documentos\\Dynamic Connect\\Session\\TECFINITY.dcs"
+MAINFRAME_CLIENT_PATH = r"C:\Program Files (x86)\Dynamic Connect\Session\TECFINITY.dcs"
 ORDERS_INPUT_FILE_PATH = "devdata/input/testdata.xlsx"
 SCREENSHOT_DIR = "output/screenshots"
 WORK_ITEMS_FILE_PATH = "output/workitems.json"
@@ -36,9 +40,8 @@ def maximize_window():
         desktop().send_keys('{Alt} {Space}')
         time.sleep(1)  # Wait for the system menu to open
         
-        # Send 'X' to select the maximize option
         desktop().send_keys('X')
-        time.sleep(1)  # Wait for the window to maximize
+        time.sleep(1)
         print("Window maximized successfully.")
     except Exception as e:
         print(f"Failed to maximize window: {e}")
@@ -66,24 +69,22 @@ def start_mainframe_client():
         logger.info("Opening mainframe client...")
         desktop().windows_run(MAINFRAME_CLIENT_PATH)
         logger.info("Waiting for the mainframe client to load...")
-        time.sleep(4) 
+        time.sleep(3) 
         maximize_window()
-        time.sleep(6)  # Adjust this time based on your application load time
+        time.sleep(2)
     except Exception as e:
         logger.error(f"Failed to start mainframe client: {e}")
 
 def login(username, password):
     """Perform the login with the provided credentials."""
     try:
-        logger.info("Sending login credentials...")
-        press_enter(1)  # Send the Enter key to start the login process
         logger.info(f"Entering username: {username}")
         enter_value(username)
         logger.info("Entering password.")
         enter_value(password)
+        press_enter(1)
         logger.info("Login process completed.")
         logger.info("Sending login credentials...TO SUBSCREEN")
-        press_enter(1)  # Send the Enter key to start the login process
         logger.info(f"Entering username: {username}")
         enter_value(username)
         logger.info("Entering password.")
@@ -108,7 +109,7 @@ def rollback_from_sub_screen():
         desktop().send_keys('{F1}')
         desktop().send_keys('{RIGHT}')
         desktop().send_keys('{Enter}')
-        time.sleep(2)  # Adjust the sleep time if necessary
+        time.sleep(2)
         logger.info("Rollback to main screen completed.")
     except Exception as e:
         logger.error(f"An error occurred during rollback: {e}")
@@ -118,7 +119,7 @@ def press_enter(times=1):
     try:
         for _ in range(times):
             desktop().send_keys('{Enter}')
-            time.sleep(3)  # Adjust the sleep time if necessary
+            time.sleep(1) 
     except Exception as e:
         logger.error(f"Failed to press Enter: {e}")
 
@@ -126,7 +127,6 @@ def enter_value(param, enter_after=True):
     """Enter a value and optionally press Enter."""
     try:
         desktop().send_keys(f"{param}")
-        time.sleep(3)  # Adjust the sleep time if necessary
         if enter_after:
             press_enter(1)
     except Exception as e:
@@ -161,7 +161,7 @@ def send_keys_multiple_times(key, times):
     try:
         for _ in range(times):
             desktop().send_keys(key)
-            time.sleep(3)  # Adjust the sleep time if necessary
+            time.sleep(3)
     except Exception as e:
         logger.error(f"Failed to send keys multiple times: {e}")
 
@@ -170,7 +170,7 @@ def press_arrow_down(times=1):
     try:
         for _ in range(times):
             desktop().send_keys('{DOWN}')
-            time.sleep(2)  # Adjust the sleep time if necessary
+            time.sleep(2)
     except Exception as e:
         logger.error(f"Failed to press arrow down: {e}")
 
@@ -179,7 +179,7 @@ def press_arrow_right(times=1):
     try:
         for _ in range(times):
             desktop().send_keys('{RIGHT}')
-            time.sleep(2)  # Adjust the sleep time if necessary
+            time.sleep(2)
     except Exception as e:
         logger.error(f"Failed to press arrow right: {e}")
 
@@ -265,35 +265,29 @@ def capture_new_order(customer_number, orderdesc, stock_no, quantity_value, comm
     """Capture a new order in the system."""
     try:
         logger.info(f"Processing customer number: {customer_number}")
-
+        
+        logger.info("Sent Shift + Enter.")   
         desktop().send_keys("+{Enter}")
-        logger.info("Sent Shift + Enter.")
-        time.sleep(3)
+        
         press_enter(2)
-        time.sleep(3)
         enter_value(customer_number)
-        time.sleep(4)
-        press_enter(1)
-        send_keys_multiple_times("{Esc}", 1)
         press_enter(2)
         enter_value(orderdesc)
-        time.sleep(5)
         press_enter(4)
         enter_value(stock_no)
-        press_enter(3)
-        enter_value(quantity_value)
         press_enter(1)
+        enter_value(quantity_value)
+        press_enter(2)
         enter_value("C1")
         enter_value(comment)
-        press_enter(4)
+        press_enter(5)
         logger.info("New order captured successfully.")
     
     except Exception as e:
         logger.error(f"An error occurred while capturing new order for customer number {customer_number}: {e}")
 
             
-    
-def process_customers(customer_data):
+def create_orders(customer_data):
     work_items = []
     for row in customer_data:
         try:
@@ -309,7 +303,6 @@ def process_customers(customer_data):
             checker = row['Checker']
 
             capture_new_order(customer_number, orderdesc, stock_no, quantity_value, comment)
-
             start_pos = (390, 218)
             end_pos = (1168, 542)
             clipboard_text = highlight_and_copy(start_pos[0], start_pos[1], end_pos[0], end_pos[1])
@@ -329,28 +322,40 @@ def process_customers(customer_data):
                 "had_error": had_error
             }
             work_items.append(work_item)
-
-            time.sleep(4)
         except Exception as e:
             logger.error(f"An error occurred while processing customer number {customer_number}: {e}")
-            time.sleep(4)
             raise
 
-    json_lib.save_to_file(WORK_ITEMS_FILE_PATH, work_items)
+    json_lib.save_json_to_file(doc=work_items, filename=WORK_ITEMS_FILE_PATH,)
 
 
 @task
 def main():
     """Main function to run the automation task."""
     credentials = load_credentials()
+
     if credentials:
         username, password = credentials
         start_mainframe_client()
         login(username, password)
+        time.sleep(2)
         customer_data = load_customer_data()
         if customer_data:
-            process_customers(customer_data)
-        close_mainframe_client()
+            create_orders(customer_data)
+            
+            #TODO: 
+            #option 2: Cater for those customers that have exceeded the credit limit
+            
+            option3.allocate_to_picker()
+            time.sleep(3)
+            option4.allocate_to_precheck()
+            time.sleep(3)
+            option5.scan_option()
+            time.sleep(3)
+            option6.print_option()
+            time.sleep(2)
+            close_mainframe_client()
+            #close_mainframe_client()
     else:
         print("No credentials available. Terminating the process.")
 

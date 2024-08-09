@@ -1,0 +1,1 @@
+app = windows.find_window('regex:.*LOCALHOST')

@@ -115,7 +115,7 @@ def press_enter(times=1):
     try:
         for _ in range(times):
             desktop().send_keys('{Enter}')
-            time.sleep(3)  # Adjust the sleep time if necessary
+            time.sleep(1)
     except Exception as e:
         logger.error(f"Failed to press Enter: {e}")
 
@@ -123,7 +123,6 @@ def enter_value(param, enter_after=True):
     """Enter a value and optionally press Enter."""
     try:
         desktop().send_keys(f"{param}")
-        time.sleep(3)  # Adjust the sleep time if necessary
         if enter_after:
             press_enter(1)
     except Exception as e:
@@ -167,41 +166,54 @@ def press_arrow_down(times=1):
     try:
         for _ in range(times):
             desktop().send_keys('{DOWN}')
-            time.sleep(2)  # Adjust the sleep time if necessary
+            time.sleep(1) 
     except Exception as e:
         logger.error(f"Failed to press arrow down: {e}")
+
+
+def go_back(key, times):
+    """Send a specified key multiple times."""
+    try:
+        for _ in range(times):
+            desktop().send_keys(key)
+    except Exception as e:
+        logger.error(f"Failed to send keys multiple times: {e}")
+
 
 def press_arrow_right(times=1):
     """Press the arrow right key a specified number of times."""
     try:
         for _ in range(times):
             desktop().send_keys('{RIGHT}')
-            time.sleep(2)  # Adjust the sleep time if necessary
     except Exception as e:
         logger.error(f"Failed to press arrow right: {e}")
+
 
 def scan_picking_slip(pnumber, stock_no, quantity_value):
     """5. Scan picking slip using parcel number, stock number, and quantity value."""
     try:
         logger.info(f"Processing customer p_number: {pnumber}")
-        desktop().send_keys("+{Enter}")  # Send Shift + Enter
+        desktop().send_keys("+{Enter}")
         enter_value(5)
         enter_value(pnumber)
-        press_enter(1)
+        press_enter(3)
         enter_value(stock_no)
-        enter_value(quantity_value)
+
+        if quantity_value > 1:
+            enter_value(quantity_value)
+        
         press_enter(2)
-        time.sleep(5)
+        time.sleep(2)
     except Exception as e:
         logger.error(f"An error occurred while processing customer p_number {pnumber}: {e}")
         rollback_to_main_screen()
         close_mainframe_client()
         raise
 
-def process_customers(customer_data):
+
+def scan_option():
     """Process each customer and enter order details."""
     try:
-        # Load working items from JSON
         working_items_path = "output/workitems.json"
         working_items = json_lib.load_json_from_file(working_items_path)
 
@@ -214,27 +226,6 @@ def process_customers(customer_data):
                 scan_picking_slip(pnumber, stock_no, quantity_value)
             else:
                 logger.error("Failed to extract pnumber from ocr output")
-
-            time.sleep(4)
     except Exception as e:
         logger.error(f"An error occurred while processing working items: {e}")
-        time.sleep(4)
         raise
-
-@task
-def main():
-    """Main function to run the automation task."""
-    credentials = load_credentials()
-    if credentials:
-        username, password = credentials
-        start_mainframe_client()
-        login(username, password)
-        customer_data = load_customer_data()
-        if customer_data:
-            process_customers(customer_data)
-        close_mainframe_client()
-    else:
-        print("No credentials available. Terminating the process.")
-
-if __name__ == "__main__":
-    main()

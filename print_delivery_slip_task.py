@@ -40,6 +40,7 @@ def maximize_window():
     except Exception as e:
         print(f"Failed to maximize window: {e}")
 
+
 def load_credentials():
     """Load credentials from the JSON file."""
     try:
@@ -56,38 +57,7 @@ def load_credentials():
     except Exception as e:
         logger.error(f"Failed to load credentials: {e}")
         return None
-
-def start_mainframe_client():
-    """Start the mainframe client."""
-    try:
-        logger.info("Opening mainframe client...")
-        desktop().windows_run(MAINFRAME_CLIENT_PATH)
-        logger.info("Waiting for the mainframe client to load...")
-        time.sleep(4) 
-        maximize_window()
-        time.sleep(6)  # Adjust this time based on your application load time
-    except Exception as e:
-        logger.error(f"Failed to start mainframe client: {e}")
-
-def login(username, password):
-    """Perform the login with the provided credentials."""
-    try:
-        logger.info("Sending login credentials...")
-        press_enter(1)  # Send the Enter key to start the login process
-        logger.info(f"Entering username: {username}")
-        enter_value(username)
-        logger.info("Entering password.")
-        enter_value(password)
-        logger.info("Login process completed.")
-        logger.info("Sending login credentials...TO SUBSCREEN")
-        press_enter(1)  # Send the Enter key to start the login process
-        logger.info(f"Entering username: {username}")
-        enter_value(username)
-        logger.info("Entering password.")
-        enter_value(password)
-        logger.info("Login process completed.")
-    except Exception as e:
-        logger.error(f"Failed to login: {e}")
+    
 
 def rollback_to_main_screen():
     """Rollback to the main screen by sending F1 key 4 times."""
@@ -123,7 +93,7 @@ def enter_value(param, enter_after=True):
     """Enter a value and optionally press Enter."""
     try:
         desktop().send_keys(f"{param}")
-        time.sleep(3)  # Adjust the sleep time if necessary
+        time.sleep(1) 
         if enter_after:
             press_enter(1)
     except Exception as e:
@@ -162,49 +132,32 @@ def send_keys_multiple_times(key, times):
     except Exception as e:
         logger.error(f"Failed to send keys multiple times: {e}")
 
-def press_arrow_down(times=1):
-    """Press the arrow down key a specified number of times."""
-    try:
-        for _ in range(times):
-            desktop().send_keys('{DOWN}')
-            time.sleep(2)  # Adjust the sleep time if necessary
-    except Exception as e:
-        logger.error(f"Failed to press arrow down: {e}")
 
-def press_arrow_right(times=1):
-    """Press the arrow right key a specified number of times."""
-    try:
-        for _ in range(times):
-            desktop().send_keys('{RIGHT}')
-            time.sleep(2)  # Adjust the sleep time if necessary
-    except Exception as e:
-        logger.error(f"Failed to press arrow right: {e}")
 
 def print_delivery_slip(pnumber, no_of_labels, total_weight, packer, checker):
     """Print delivery slip using parcel number, number of labels, total weight, packer, and checker."""
     try:
         logger.info(f"Processing customer p_number: {pnumber}")
-        desktop().send_keys("+{Enter}")  # Send Shift + Enter
+        desktop().send_keys("+{Enter}") 
         enter_value(6) 
         enter_value(pnumber)
         press_enter(1)
         enter_value(no_of_labels)
         enter_value(total_weight)
-        enter_value(checker)
         enter_value(packer)
         enter_value(checker)
-        press_enter(1)
-        enter_value("N")
-        time.sleep(4)
+        enter_value(checker)
+        press_enter(2)
     except Exception as e:
         logger.error(f"An error occurred while processing customer p_number {pnumber}: {e}")
         rollback_to_main_screen()
         close_mainframe_client()
         raise
-def process_customers(customer_data):
+
+
+def print_option():
     """Process each customer and enter order details."""
     try:
-        # Load working items from JSON
         working_items_path = "output/workitems.json"
         working_items = json_lib.load_json_from_file(working_items_path)
 
@@ -214,32 +167,11 @@ def process_customers(customer_data):
             total_weight = item['total_weight']
             packer = item['packer']
             checker = item['checker']
-
+            
             if pnumber:
-               print_delivery_slip(pnumber, no_of_labels, total_weight, packer, checker)
+                print_delivery_slip(pnumber, no_of_labels, total_weight, packer, checker)
             else:
                 logger.error("Failed to extract pnumber from ocr output")
-
-            time.sleep(4)
     except Exception as e:
         logger.error(f"An error occurred while processing working items: {e}")
-        time.sleep(4)
         raise
-
-@task
-def main():
-    """Main function to run the automation task."""
-    credentials = load_credentials()
-    if credentials:
-        username, password = credentials
-        start_mainframe_client()
-        login(username, password)
-        customer_data = load_customer_data()
-        if customer_data:
-            process_customers(customer_data)
-        close_mainframe_client()
-    else:
-        print("No credentials available. Terminating the process.")
-
-if __name__ == "__main__":
-    main()

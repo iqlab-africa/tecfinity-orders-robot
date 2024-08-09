@@ -184,21 +184,20 @@ def precheck_picking_slip(pnumber, stock_no, quantity_value):
     """4. Precheck picking slip using parcel number, stock number, and quantity value."""
     try:
         logger.info(f"Processing customer p_number: {pnumber}")
-        desktop().send_keys("+{Enter}")  # Send Shift + Enter
+        desktop().send_keys("+{Enter}")
         enter_value(4)
         enter_value(pnumber)
         press_enter(1)
         enter_value(stock_no)
         enter_value(quantity_value)
         press_enter(1)
-        time.sleep(4)
     except Exception as e:
         logger.error(f"An error occurred while processing customer p_number {pnumber}: {e}")
         rollback_to_main_screen()
         close_mainframe_client()
         raise
 
-def process_customers():
+def allocate_to_precheck():
     """Process each customer and enter order details."""
     try:
         # Load working items from JSON
@@ -214,27 +213,7 @@ def process_customers():
                precheck_picking_slip(pnumber, stock_no, quantity_value)
             else:
                 logger.error("Failed to extract pnumber from ocr output")
-
-            time.sleep(4)
     except Exception as e:
         logger.error(f"An error occurred while processing working items: {e}")
-        time.sleep(4)
         raise
 
-@task
-def main():
-    """Main function to run the automation task."""
-    credentials = load_credentials()
-    if credentials:
-        username, password = credentials
-        start_mainframe_client()
-        login(username, password)
-        customer_data = load_customer_data()
-        if customer_data:
-            process_customers(customer_data)
-        close_mainframe_client()
-    else:
-        print("No credentials available. Terminating the process.")
-
-if __name__ == "__main__":
-    main()
